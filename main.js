@@ -5198,6 +5198,12 @@ var $author$project$Main$parseTransactionForm = function (txnForm) {
 		},
 		$elm$core$String$toFloat(txnForm.amount));
 };
+var $elm$core$Basics$negate = function (n) {
+	return -n;
+};
+var $author$project$Util$absolute = function (n) {
+	return (n < 0) ? ((-1) * n) : n;
+};
 var $elm$core$List$append = F2(
 	function (xs, ys) {
 		if (!ys.b) {
@@ -5343,12 +5349,6 @@ var $author$project$Util$maybeOrElse = F2(
 			return $elm$core$Maybe$Just(_default);
 		}
 	});
-var $elm$core$Basics$negate = function (n) {
-	return -n;
-};
-var $author$project$Util$absolute = function (n) {
-	return (n < 0) ? ((-1) * n) : n;
-};
 var $elm$core$List$drop = F2(
 	function (n, list) {
 		drop:
@@ -5389,28 +5389,38 @@ var $author$project$Main$settleFromNettedAmount = F2(
 			var posTxn = _v0.a.a;
 			var negTxn = _v0.b.a;
 			if (_Utils_cmp(posTxn.amount, negTxn.amount) > 0) {
-				var settlement = {
-					amount: $author$project$Util$absolute(negTxn.amount),
-					payee: posTxn.payer,
-					payer: negTxn.payer
-				};
+				var settlement = {amount: negTxn.amount, payee: posTxn.payer, payer: negTxn.payer};
+				var newHead = _Utils_update(
+					posTxn,
+					{amount: posTxn.amount - negTxn.amount});
+				var newPosNetted = A2(
+					$elm$core$List$cons,
+					newHead,
+					$author$project$Util$dropHead(positiveNetted));
 				return A2(
 					$elm$core$List$cons,
 					settlement,
 					A2(
 						$author$project$Main$settleFromNettedAmount,
-						positiveNetted,
+						newPosNetted,
 						$author$project$Util$dropHead(negativeNetted)));
 			} else {
 				if (_Utils_cmp(posTxn.amount, negTxn.amount) < 0) {
 					var settlement = {amount: posTxn.amount, payee: posTxn.payer, payer: negTxn.payer};
+					var newHead = _Utils_update(
+						negTxn,
+						{amount: negTxn.amount - posTxn.amount});
+					var newNegNetted = A2(
+						$elm$core$List$cons,
+						newHead,
+						$author$project$Util$dropHead(negativeNetted));
 					return A2(
 						$elm$core$List$cons,
 						settlement,
 						A2(
 							$author$project$Main$settleFromNettedAmount,
 							$author$project$Util$dropHead(positiveNetted),
-							negativeNetted));
+							newNegNetted));
 				} else {
 					var settlement = {amount: posTxn.amount, payee: posTxn.payer, payer: negTxn.payer};
 					return A2(
@@ -5907,12 +5917,6 @@ var $author$project$Main$settleTransaction = F2(
 				return {amount: amount, detail: '', payer: payer};
 			},
 			$elm$core$Dict$toList(groupedByName));
-		var sortedTransactionList = A2(
-			$elm$core$List$sortBy,
-			function (txn) {
-				return txn.amount;
-			},
-			groupedByNameAsList);
 		var amountPerPayer = totalAmountPaid / totalMember;
 		var nettedTransactionList = A2(
 			$elm$core$List$map,
@@ -5921,19 +5925,38 @@ var $author$project$Main$settleTransaction = F2(
 					txn,
 					{amount: txn.amount - amountPerPayer});
 			},
-			sortedTransactionList);
+			groupedByNameAsList);
 		var nettedNegative = A2(
-			$elm$core$List$filter,
+			$elm$core$List$sortBy,
 			function (txn) {
-				return txn.amount < 0;
+				return txn.amount;
 			},
-			nettedTransactionList);
+			A2(
+				$elm$core$List$map,
+				function (txn) {
+					return _Utils_update(
+						txn,
+						{
+							amount: $author$project$Util$absolute(txn.amount)
+						});
+				},
+				A2(
+					$elm$core$List$filter,
+					function (txn) {
+						return txn.amount < 0;
+					},
+					nettedTransactionList)));
 		var nettedPositive = A2(
-			$elm$core$List$filter,
+			$elm$core$List$sortBy,
 			function (txn) {
-				return txn.amount > 0;
+				return txn.amount;
 			},
-			nettedTransactionList);
+			A2(
+				$elm$core$List$filter,
+				function (txn) {
+					return txn.amount > 0;
+				},
+				nettedTransactionList));
 		return A2($author$project$Main$settleFromNettedAmount, nettedPositive, nettedNegative);
 	});
 var $elm$core$Maybe$withDefault = F2(
