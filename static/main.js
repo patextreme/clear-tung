@@ -4472,9 +4472,10 @@ var $elm$core$Set$toList = function (_v0) {
 var $elm$core$Basics$EQ = {$: 'EQ'};
 var $elm$core$Basics$GT = {$: 'GT'};
 var $elm$core$Basics$LT = {$: 'LT'};
+var $author$project$Model$Hide = {$: 'Hide'};
 var $elm$core$Maybe$Nothing = {$: 'Nothing'};
-var $author$project$Main$emptyTxnForm = {amount: '', name: '', payer: ''};
-var $author$project$Main$init = {parsedTxn: $elm$core$Maybe$Nothing, runningTxnId: 0, settlement: _List_Nil, txnForm: $author$project$Main$emptyTxnForm, txnList: _List_Nil};
+var $author$project$Main$emptyTxnForm = {amount: '', detail: '', payer: ''};
+var $author$project$Main$init = {modalMode: $author$project$Model$Hide, parsedTxn: $elm$core$Maybe$Nothing, runningTxnId: 0, settlement: _List_Nil, txnForm: $author$project$Main$emptyTxnForm, txnList: _List_Nil};
 var $elm$core$Result$Err = function (a) {
 	return {$: 'Err', a: a};
 };
@@ -5204,6 +5205,10 @@ var $elm$browser$Browser$sandbox = function (impl) {
 			view: impl.view
 		});
 };
+var $author$project$Model$Keyed = F2(
+	function (key, data) {
+		return {data: data, key: key};
+	});
 var $elm$core$List$filter = F2(
 	function (isGood, list) {
 		return A3(
@@ -5215,6 +5220,28 @@ var $elm$core$List$filter = F2(
 			_List_Nil,
 			list);
 	});
+var $author$project$Util$findInList = F2(
+	function (pred, list) {
+		findInList:
+		while (true) {
+			if (!list.b) {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var head = list.a;
+				var tail = list.b;
+				if (pred(head)) {
+					return $elm$core$Maybe$Just(head);
+				} else {
+					var $temp$pred = pred,
+						$temp$list = tail;
+					pred = $temp$pred;
+					list = $temp$list;
+					continue findInList;
+				}
+			}
+		}
+	});
+var $elm$core$String$fromFloat = _String_fromNumber;
 var $elm$core$Maybe$map = F2(
 	function (f, maybe) {
 		if (maybe.$ === 'Just') {
@@ -5227,11 +5254,11 @@ var $elm$core$Maybe$map = F2(
 	});
 var $elm$core$Basics$neq = _Utils_notEqual;
 var $elm$core$String$toFloat = _String_toFloat;
-var $author$project$Main$parseTransactionForm = function (txnForm) {
+var $author$project$Util$parseTransactionForm = function (txnForm) {
 	return A2(
 		$elm$core$Maybe$map,
 		function (amount) {
-			return {amount: amount, detail: txnForm.name, payer: txnForm.payer};
+			return {amount: amount, detail: txnForm.detail, payer: txnForm.payer};
 		},
 		$elm$core$String$toFloat(txnForm.amount));
 };
@@ -5996,6 +6023,134 @@ var $author$project$Main$settleTransaction = F2(
 				nettedTransactionList));
 		return A2($author$project$Main$settleFromNettedAmount, nettedPositive, nettedNegative);
 	});
+var $author$project$Util$findIndexInListRecur = F3(
+	function (n, pred, remaining) {
+		findIndexInListRecur:
+		while (true) {
+			if (!remaining.b) {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var head = remaining.a;
+				var tail = remaining.b;
+				if (pred(head)) {
+					return $elm$core$Maybe$Just(n);
+				} else {
+					var $temp$n = n + 1,
+						$temp$pred = pred,
+						$temp$remaining = tail;
+					n = $temp$n;
+					pred = $temp$pred;
+					remaining = $temp$remaining;
+					continue findIndexInListRecur;
+				}
+			}
+		}
+	});
+var $author$project$Util$findIndexInList = F2(
+	function (pred, list) {
+		return A3($author$project$Util$findIndexInListRecur, 0, pred, list);
+	});
+var $elm$core$Array$fromListHelp = F3(
+	function (list, nodeList, nodeListSize) {
+		fromListHelp:
+		while (true) {
+			var _v0 = A2($elm$core$Elm$JsArray$initializeFromList, $elm$core$Array$branchFactor, list);
+			var jsArray = _v0.a;
+			var remainingItems = _v0.b;
+			if (_Utils_cmp(
+				$elm$core$Elm$JsArray$length(jsArray),
+				$elm$core$Array$branchFactor) < 0) {
+				return A2(
+					$elm$core$Array$builderToArray,
+					true,
+					{nodeList: nodeList, nodeListSize: nodeListSize, tail: jsArray});
+			} else {
+				var $temp$list = remainingItems,
+					$temp$nodeList = A2(
+					$elm$core$List$cons,
+					$elm$core$Array$Leaf(jsArray),
+					nodeList),
+					$temp$nodeListSize = nodeListSize + 1;
+				list = $temp$list;
+				nodeList = $temp$nodeList;
+				nodeListSize = $temp$nodeListSize;
+				continue fromListHelp;
+			}
+		}
+	});
+var $elm$core$Array$fromList = function (list) {
+	if (!list.b) {
+		return $elm$core$Array$empty;
+	} else {
+		return A3($elm$core$Array$fromListHelp, list, _List_Nil, 0);
+	}
+};
+var $elm$core$Bitwise$and = _Bitwise_and;
+var $elm$core$Bitwise$shiftRightZfBy = _Bitwise_shiftRightZfBy;
+var $elm$core$Array$bitMask = 4294967295 >>> (32 - $elm$core$Array$shiftStep);
+var $elm$core$Basics$ge = _Utils_ge;
+var $elm$core$Elm$JsArray$unsafeGet = _JsArray_unsafeGet;
+var $elm$core$Elm$JsArray$unsafeSet = _JsArray_unsafeSet;
+var $elm$core$Array$setHelp = F4(
+	function (shift, index, value, tree) {
+		var pos = $elm$core$Array$bitMask & (index >>> shift);
+		var _v0 = A2($elm$core$Elm$JsArray$unsafeGet, pos, tree);
+		if (_v0.$ === 'SubTree') {
+			var subTree = _v0.a;
+			var newSub = A4($elm$core$Array$setHelp, shift - $elm$core$Array$shiftStep, index, value, subTree);
+			return A3(
+				$elm$core$Elm$JsArray$unsafeSet,
+				pos,
+				$elm$core$Array$SubTree(newSub),
+				tree);
+		} else {
+			var values = _v0.a;
+			var newLeaf = A3($elm$core$Elm$JsArray$unsafeSet, $elm$core$Array$bitMask & index, value, values);
+			return A3(
+				$elm$core$Elm$JsArray$unsafeSet,
+				pos,
+				$elm$core$Array$Leaf(newLeaf),
+				tree);
+		}
+	});
+var $elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
+var $elm$core$Array$tailIndex = function (len) {
+	return (len >>> 5) << 5;
+};
+var $elm$core$Array$set = F3(
+	function (index, value, array) {
+		var len = array.a;
+		var startShift = array.b;
+		var tree = array.c;
+		var tail = array.d;
+		return ((index < 0) || (_Utils_cmp(index, len) > -1)) ? array : ((_Utils_cmp(
+			index,
+			$elm$core$Array$tailIndex(len)) > -1) ? A4(
+			$elm$core$Array$Array_elm_builtin,
+			len,
+			startShift,
+			tree,
+			A3($elm$core$Elm$JsArray$unsafeSet, $elm$core$Array$bitMask & index, value, tail)) : A4(
+			$elm$core$Array$Array_elm_builtin,
+			len,
+			startShift,
+			A4($elm$core$Array$setHelp, startShift, index, value, tree),
+			tail));
+	});
+var $author$project$Util$updateWhere = F3(
+	function (pred, elem, list) {
+		var idx = A2($author$project$Util$findIndexInList, pred, list);
+		var array = $elm$core$Array$fromList(list);
+		var newArray = function () {
+			if (idx.$ === 'Just') {
+				var i = idx.a;
+				return A3($elm$core$Array$set, i, elem, array);
+			} else {
+				return array;
+			}
+		}();
+		return $elm$core$Array$toList(newArray);
+	});
 var $elm$core$Maybe$withDefault = F2(
 	function (_default, maybe) {
 		if (maybe.$ === 'Just') {
@@ -6013,8 +6168,8 @@ var $author$project$Main$update = F2(
 				var currentForm = model.txnForm;
 				var newForm = _Utils_update(
 					currentForm,
-					{name: name});
-				var parsed = $author$project$Main$parseTransactionForm(newForm);
+					{detail: name});
+				var parsed = $author$project$Util$parseTransactionForm(newForm);
 				return _Utils_update(
 					model,
 					{parsedTxn: parsed, txnForm: newForm});
@@ -6024,7 +6179,7 @@ var $author$project$Main$update = F2(
 				var newForm = _Utils_update(
 					currentForm,
 					{payer: payer});
-				var parsed = $author$project$Main$parseTransactionForm(newForm);
+				var parsed = $author$project$Util$parseTransactionForm(newForm);
 				return _Utils_update(
 					model,
 					{parsedTxn: parsed, txnForm: newForm});
@@ -6034,7 +6189,7 @@ var $author$project$Main$update = F2(
 				var newForm = _Utils_update(
 					currentForm,
 					{amount: amount});
-				var parsed = $author$project$Main$parseTransactionForm(newForm);
+				var parsed = $author$project$Util$parseTransactionForm(newForm);
 				return _Utils_update(
 					model,
 					{parsedTxn: parsed, txnForm: newForm});
@@ -6058,6 +6213,76 @@ var $author$project$Main$update = F2(
 					{
 						parsedTxn: $elm$core$Maybe$Nothing,
 						runningTxnId: model.runningTxnId + 1,
+						settlement: A2(
+							$author$project$Main$settleTransaction,
+							A2(
+								$elm$core$List$map,
+								function (kt) {
+									return kt.data;
+								},
+								newTxnList),
+							_List_Nil),
+						txnForm: $author$project$Main$emptyTxnForm,
+						txnList: newTxnList
+					});
+			case 'SetModal':
+				var mode = msg.a;
+				if (mode.$ === 'Hide') {
+					return _Utils_update(
+						model,
+						{modalMode: mode, txnForm: $author$project$Main$emptyTxnForm});
+				} else {
+					var id = mode.a;
+					var targetTxn = A2(
+						$elm$core$Maybe$map,
+						function (n) {
+							return n.data;
+						},
+						A2(
+							$author$project$Util$findInList,
+							function (n) {
+								return _Utils_eq(n.key, id);
+							},
+							model.txnList));
+					var newTxnForm = function () {
+						if (targetTxn.$ === 'Just') {
+							var txn = targetTxn.a;
+							return {
+								amount: $elm$core$String$fromFloat(txn.amount),
+								detail: txn.detail,
+								payer: txn.payer
+							};
+						} else {
+							return $author$project$Main$emptyTxnForm;
+						}
+					}();
+					var newParsedTxn = $author$project$Util$parseTransactionForm(newTxnForm);
+					return _Utils_update(
+						model,
+						{modalMode: mode, parsedTxn: newParsedTxn, txnForm: newTxnForm});
+				}
+			case 'UpdateTransaction':
+				var id = msg.a;
+				var newTxnList = function () {
+					var _v3 = model.parsedTxn;
+					if (_v3.$ === 'Just') {
+						var txn = _v3.a;
+						return A3(
+							$author$project$Util$updateWhere,
+							function (n) {
+								return _Utils_eq(n.key, id);
+							},
+							A2($author$project$Model$Keyed, id, txn),
+							model.txnList);
+					} else {
+						return model.txnList;
+					}
+				}();
+				return _Utils_update(
+					model,
+					{
+						modalMode: $author$project$Model$Hide,
+						parsedTxn: $elm$core$Maybe$Nothing,
 						settlement: A2(
 							$author$project$Main$settleTransaction,
 							A2(
@@ -6094,8 +6319,6 @@ var $author$project$Main$update = F2(
 					});
 		}
 	});
-var $author$project$Model$CommitTransaction = {$: 'CommitTransaction'};
-var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$json$Json$Encode$string = _Json_wrap;
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
@@ -6105,112 +6328,6 @@ var $elm$html$Html$Attributes$stringProperty = F2(
 			$elm$json$Json$Encode$string(string));
 	});
 var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
-var $elm$json$Json$Encode$bool = _Json_wrap;
-var $elm$html$Html$Attributes$boolProperty = F2(
-	function (key, bool) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			$elm$json$Json$Encode$bool(bool));
-	});
-var $elm$html$Html$Attributes$disabled = $elm$html$Html$Attributes$boolProperty('disabled');
-var $elm$core$Basics$not = _Basics_not;
-var $elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
-var $elm$html$Html$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$Normal(decoder));
-	});
-var $elm$html$Html$Events$onClick = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'click',
-		$elm$json$Json$Decode$succeed(msg));
-};
-var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
-var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
-var $author$project$Page$Home$addTransactionBtn = function (isValid) {
-	return A2(
-		$elm$html$Html$button,
-		_List_fromArray(
-			[
-				$elm$html$Html$Attributes$class('button is-info is-fullwidth margin-y-tiny is-rounded'),
-				$elm$html$Html$Events$onClick($author$project$Model$CommitTransaction),
-				$elm$html$Html$Attributes$disabled(!isValid)
-			]),
-		_List_fromArray(
-			[
-				$elm$html$Html$text('Add Item')
-			]));
-};
-var $author$project$Model$UpdateAmount = function (a) {
-	return {$: 'UpdateAmount', a: a};
-};
-var $elm$core$String$concat = function (strings) {
-	return A2($elm$core$String$join, '', strings);
-};
-var $elm$html$Html$input = _VirtualDom_node('input');
-var $elm$html$Html$Events$alwaysStop = function (x) {
-	return _Utils_Tuple2(x, true);
-};
-var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
-	return {$: 'MayStopPropagation', a: a};
-};
-var $elm$html$Html$Events$stopPropagationOn = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
-	});
-var $elm$json$Json$Decode$field = _Json_decodeField;
-var $elm$json$Json$Decode$at = F2(
-	function (fields, decoder) {
-		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
-	});
-var $elm$json$Json$Decode$string = _Json_decodeString;
-var $elm$html$Html$Events$targetValue = A2(
-	$elm$json$Json$Decode$at,
-	_List_fromArray(
-		['target', 'value']),
-	$elm$json$Json$Decode$string);
-var $elm$html$Html$Events$onInput = function (tagger) {
-	return A2(
-		$elm$html$Html$Events$stopPropagationOn,
-		'input',
-		A2(
-			$elm$json$Json$Decode$map,
-			$elm$html$Html$Events$alwaysStop,
-			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
-};
-var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
-var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
-var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
-var $author$project$Page$Home$amountInput = F2(
-	function (data, isValid) {
-		return A2(
-			$elm$html$Html$input,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class(
-					$elm$core$String$concat(
-						_List_fromArray(
-							[
-								'input margin-y-tiny is-rounded',
-								isValid(data) ? '' : ' is-danger'
-							]))),
-					$elm$html$Html$Attributes$type_('text'),
-					$elm$html$Html$Attributes$placeholder('Enter amount'),
-					$elm$html$Html$Attributes$value(data),
-					$elm$html$Html$Events$onInput($author$project$Model$UpdateAmount)
-				]),
-			_List_Nil);
-	});
 var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$core$List$isEmpty = function (xs) {
 	if (!xs.b) {
@@ -6219,39 +6336,8 @@ var $elm$core$List$isEmpty = function (xs) {
 		return false;
 	}
 };
-var $elm$core$String$trim = _String_trim;
-var $author$project$Main$isNonEmptyString = function (s) {
-	return !$elm$core$String$isEmpty(
-		$elm$core$String$trim(s));
-};
-var $elm$core$Basics$ge = _Utils_ge;
-var $author$project$Main$isPositiveFloat = function (n) {
-	return n >= 0;
-};
-var $author$project$Model$UpdatePayerName = function (a) {
-	return {$: 'UpdatePayerName', a: a};
-};
-var $author$project$Page$Home$payerInput = F2(
-	function (data, isValid) {
-		return A2(
-			$elm$html$Html$input,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class(
-					$elm$core$String$concat(
-						_List_fromArray(
-							[
-								'input margin-y-tiny is-rounded',
-								isValid(data) ? '' : ' is-danger'
-							]))),
-					$elm$html$Html$Attributes$type_('text'),
-					$elm$html$Html$Attributes$placeholder('Enter payer'),
-					$elm$html$Html$Attributes$value(data),
-					$elm$html$Html$Events$onInput($author$project$Model$UpdatePayerName)
-				]),
-			_List_Nil);
-	});
 var $elm$html$Html$section = _VirtualDom_node('section');
+var $elm$core$Basics$not = _Basics_not;
 var $elm$core$Basics$abs = function (n) {
 	return (n < 0) ? (-n) : n;
 };
@@ -6296,7 +6382,6 @@ var $myrho$elm_round$Round$addSign = F2(
 			(signed && isNotZero) ? '-' : '',
 			str);
 	});
-var $elm$core$String$fromFloat = _String_fromNumber;
 var $elm$core$String$cons = _String_cons;
 var $elm$core$Char$fromCode = _Char_fromCode;
 var $myrho$elm_round$Round$increaseNum = function (_v0) {
@@ -6328,7 +6413,6 @@ var $elm$core$Basics$isNaN = _Basics_isNaN;
 var $elm$core$String$fromChar = function (_char) {
 	return A2($elm$core$String$cons, _char, '');
 };
-var $elm$core$Bitwise$and = _Bitwise_and;
 var $elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
 var $elm$core$String$repeatHelp = F3(
 	function (n, chunk, result) {
@@ -6514,6 +6598,8 @@ var $myrho$elm_round$Round$round = $myrho$elm_round$Round$roundFun(
 var $elm$html$Html$table = _VirtualDom_node('table');
 var $elm$html$Html$tbody = _VirtualDom_node('tbody');
 var $elm$html$Html$td = _VirtualDom_node('td');
+var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $elm$html$Html$th = _VirtualDom_node('th');
 var $elm$html$Html$thead = _VirtualDom_node('thead');
 var $elm$html$Html$tr = _VirtualDom_node('tr');
@@ -6634,6 +6720,250 @@ var $author$project$Page$Home$titleHeading = A2(
 						]))
 				]))
 		]));
+var $author$project$Model$CommitTransaction = {$: 'CommitTransaction'};
+var $elm$html$Html$button = _VirtualDom_node('button');
+var $elm$json$Json$Encode$bool = _Json_wrap;
+var $elm$html$Html$Attributes$boolProperty = F2(
+	function (key, bool) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$bool(bool));
+	});
+var $elm$html$Html$Attributes$disabled = $elm$html$Html$Attributes$boolProperty('disabled');
+var $elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var $elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var $elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'click',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $author$project$Page$Home$addTransactionBtn = function (isValid) {
+	return A2(
+		$elm$html$Html$button,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('button is-info is-fullwidth margin-y-tiny is-rounded'),
+				$elm$html$Html$Events$onClick($author$project$Model$CommitTransaction),
+				$elm$html$Html$Attributes$disabled(!isValid)
+			]),
+		_List_fromArray(
+			[
+				$elm$html$Html$text('Add Item')
+			]));
+};
+var $author$project$Model$UpdateAmount = function (a) {
+	return {$: 'UpdateAmount', a: a};
+};
+var $elm$html$Html$input = _VirtualDom_node('input');
+var $elm$html$Html$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var $elm$html$Html$Events$stopPropagationOn = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
+	});
+var $elm$json$Json$Decode$field = _Json_decodeField;
+var $elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
+	});
+var $elm$json$Json$Decode$string = _Json_decodeString;
+var $elm$html$Html$Events$targetValue = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	$elm$json$Json$Decode$string);
+var $elm$html$Html$Events$onInput = function (tagger) {
+	return A2(
+		$elm$html$Html$Events$stopPropagationOn,
+		'input',
+		A2(
+			$elm$json$Json$Decode$map,
+			$elm$html$Html$Events$alwaysStop,
+			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
+};
+var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
+var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
+var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
+var $author$project$Page$Home$amountInput = F2(
+	function (data, isValid) {
+		return A2(
+			$elm$html$Html$input,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class(
+					'input margin-y-tiny is-rounded' + (isValid(data) ? '' : ' is-danger')),
+					$elm$html$Html$Attributes$type_('text'),
+					$elm$html$Html$Attributes$placeholder('Enter amount'),
+					$elm$html$Html$Attributes$value(data),
+					$elm$html$Html$Events$onInput($author$project$Model$UpdateAmount)
+				]),
+			_List_Nil);
+	});
+var $author$project$Model$UpdateTransaction = function (a) {
+	return {$: 'UpdateTransaction', a: a};
+};
+var $author$project$Page$Home$editTransactionBtn = F2(
+	function (isValid, id) {
+		return A2(
+			$elm$html$Html$button,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('button is-info is-fullwidth margin-y-tiny is-rounded'),
+					$elm$html$Html$Events$onClick(
+					$author$project$Model$UpdateTransaction(id)),
+					$elm$html$Html$Attributes$disabled(!isValid)
+				]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text('Confirm Changes')
+				]));
+	});
+var $elm$core$String$trim = _String_trim;
+var $author$project$Util$isNonEmptyString = function (s) {
+	return !$elm$core$String$isEmpty(
+		$elm$core$String$trim(s));
+};
+var $author$project$Util$isPositiveFloat = function (n) {
+	return n >= 0;
+};
+var $author$project$Model$UpdatePayerName = function (a) {
+	return {$: 'UpdatePayerName', a: a};
+};
+var $author$project$Page$Home$payerInput = F2(
+	function (data, isValid) {
+		return A2(
+			$elm$html$Html$input,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class(
+					'input margin-y-tiny is-rounded' + (isValid(data) ? '' : ' is-danger')),
+					$elm$html$Html$Attributes$type_('text'),
+					$elm$html$Html$Attributes$placeholder('Enter payer'),
+					$elm$html$Html$Attributes$value(data),
+					$elm$html$Html$Events$onInput($author$project$Model$UpdatePayerName)
+				]),
+			_List_Nil);
+	});
+var $author$project$Model$UpdateTxnName = function (a) {
+	return {$: 'UpdateTxnName', a: a};
+};
+var $author$project$Page$Home$txnNameInput = F2(
+	function (data, isValid) {
+		return A2(
+			$elm$html$Html$input,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class(
+					'input margin-y-tiny is-rounded' + (isValid(data) ? '' : ' is-danger')),
+					$elm$html$Html$Attributes$type_('text'),
+					$elm$html$Html$Attributes$placeholder('Enter description'),
+					$elm$html$Html$Attributes$value(data),
+					$elm$html$Html$Events$onInput($author$project$Model$UpdateTxnName)
+				]),
+			_List_Nil);
+	});
+var $author$project$Util$validateTransaction = function (txn) {
+	return (txn.detail === '') ? false : ((txn.payer === '') ? false : ((txn.amount < 0) ? false : true));
+};
+var $author$project$Page$Home$transactionEditor = function (model) {
+	var isValid = A2(
+		$elm$core$Maybe$withDefault,
+		false,
+		A2($elm$core$Maybe$map, $author$project$Util$validateTransaction, model.parsedTxn));
+	var button = function () {
+		var _v0 = model.modalMode;
+		if (_v0.$ === 'Hide') {
+			return $author$project$Page$Home$addTransactionBtn(isValid);
+		} else {
+			var id = _v0.a;
+			return A2($author$project$Page$Home$editTransactionBtn, isValid, id);
+		}
+	}();
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$author$project$Page$Home$amountInput,
+				model.txnForm.amount,
+				A2(
+					$elm$core$Basics$composeR,
+					$elm$core$String$toFloat,
+					A2(
+						$elm$core$Basics$composeR,
+						$elm$core$Maybe$map($author$project$Util$isPositiveFloat),
+						$elm$core$Maybe$withDefault(false)))),
+				A2($author$project$Page$Home$txnNameInput, model.txnForm.detail, $author$project$Util$isNonEmptyString),
+				A2($author$project$Page$Home$payerInput, model.txnForm.payer, $author$project$Util$isNonEmptyString),
+				button
+			]));
+};
+var $author$project$Model$SetModal = function (a) {
+	return {$: 'SetModal', a: a};
+};
+var $author$project$Page$Home$transactionEditorModal = function (model) {
+	var show = !_Utils_eq(model.modalMode, $author$project$Model$Hide);
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class(
+				'modal' + (show ? ' is-active' : ''))
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('modal-background'),
+						$elm$html$Html$Events$onClick(
+						$author$project$Model$SetModal($author$project$Model$Hide))
+					]),
+				_List_Nil),
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('modal-content')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('box')
+							]),
+						_List_fromArray(
+							[
+								$author$project$Page$Home$transactionEditor(model)
+							]))
+					]))
+			]));
+};
+var $author$project$Model$EditMode = function (a) {
+	return {$: 'EditMode', a: a};
+};
 var $author$project$Model$RemoveTransaction = function (a) {
 	return {$: 'RemoveTransaction', a: a};
 };
@@ -6666,7 +6996,7 @@ var $author$project$Page$Home$transactionsTable = function (transactions) {
 					_List_fromArray(
 						[
 							$elm$html$Html$text(
-							$elm$core$String$fromFloat(kt.data.amount))
+							A2($myrho$elm_round$Round$round, 2, kt.data.amount))
 						])),
 					A2(
 					$elm$html$Html$td,
@@ -6688,6 +7018,25 @@ var $author$project$Page$Home$transactionsTable = function (transactions) {
 									_List_fromArray(
 										[
 											$elm$html$Html$Attributes$class('fas fa-ban')
+										]),
+									_List_Nil)
+								])),
+							A2(
+							$elm$html$Html$a,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$class('icon has-text-warn'),
+									$elm$html$Html$Events$onClick(
+									$author$project$Model$SetModal(
+										$author$project$Model$EditMode(kt.key)))
+								]),
+							_List_fromArray(
+								[
+									A2(
+									$elm$html$Html$i,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('fas fa-edit')
 										]),
 									_List_Nil)
 								]))
@@ -6746,32 +7095,6 @@ var $author$project$Page$Home$transactionsTable = function (transactions) {
 				A2($elm$html$Html$tbody, _List_Nil, rows)
 			]));
 };
-var $author$project$Model$UpdateTxnName = function (a) {
-	return {$: 'UpdateTxnName', a: a};
-};
-var $author$project$Page$Home$txnNameInput = F2(
-	function (data, isValid) {
-		return A2(
-			$elm$html$Html$input,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$class(
-					$elm$core$String$concat(
-						_List_fromArray(
-							[
-								'input margin-y-tiny is-rounded',
-								isValid(data) ? '' : ' is-danger'
-							]))),
-					$elm$html$Html$Attributes$type_('text'),
-					$elm$html$Html$Attributes$placeholder('Enter description'),
-					$elm$html$Html$Attributes$value(data),
-					$elm$html$Html$Events$onInput($author$project$Model$UpdateTxnName)
-				]),
-			_List_Nil);
-	});
-var $author$project$Main$validateTransaction = function (txn) {
-	return (txn.detail === '') ? false : ((txn.payer === '') ? false : ((txn.amount < 0) ? false : true));
-};
 var $author$project$Main$view = function (model) {
 	return A2(
 		$elm$html$Html$div,
@@ -6790,23 +7113,8 @@ var $author$project$Main$view = function (model) {
 				_List_fromArray(
 					[
 						$author$project$Page$Home$titleHeading,
-						A2(
-						$author$project$Page$Home$amountInput,
-						model.txnForm.amount,
-						A2(
-							$elm$core$Basics$composeR,
-							$elm$core$String$toFloat,
-							A2(
-								$elm$core$Basics$composeR,
-								$elm$core$Maybe$map($author$project$Main$isPositiveFloat),
-								$elm$core$Maybe$withDefault(false)))),
-						A2($author$project$Page$Home$txnNameInput, model.txnForm.name, $author$project$Main$isNonEmptyString),
-						A2($author$project$Page$Home$payerInput, model.txnForm.payer, $author$project$Main$isNonEmptyString),
-						$author$project$Page$Home$addTransactionBtn(
-						A2(
-							$elm$core$Maybe$withDefault,
-							false,
-							A2($elm$core$Maybe$map, $author$project$Main$validateTransaction, model.parsedTxn)))
+						$author$project$Page$Home$transactionEditor(model),
+						$author$project$Page$Home$transactionEditorModal(model)
 					])),
 				A2(
 				$elm$html$Html$section,
