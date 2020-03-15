@@ -5268,14 +5268,6 @@ var $elm$core$Basics$negate = function (n) {
 var $author$project$Util$absolute = function (n) {
 	return (n < 0) ? ((-1) * n) : n;
 };
-var $elm$core$List$append = F2(
-	function (xs, ys) {
-		if (!ys.b) {
-			return xs;
-		} else {
-			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
-		}
-	});
 var $elm$core$Basics$composeR = F3(
 	function (f, g, x) {
 		return g(
@@ -5932,97 +5924,86 @@ var $elm$core$Dict$update = F3(
 			return A2($elm$core$Dict$remove, targetKey, dictionary);
 		}
 	});
-var $author$project$Main$settleTransaction = F2(
-	function (transactions, additionMembers) {
-		var totalMember = $elm$core$Set$size(
-			$elm$core$Set$fromList(
-				A2(
-					$elm$core$List$append,
-					additionMembers,
-					A2(
-						$elm$core$List$map,
-						function (txn) {
-							return txn.payer;
-						},
-						transactions))));
-		var totalAmountPaid = $elm$core$List$sum(
+var $author$project$Main$settleTransaction = function (transactions) {
+	var totalMember = $elm$core$Set$size(
+		$elm$core$Set$fromList(
 			A2(
 				$elm$core$List$map,
 				function (txn) {
-					return txn.amount;
+					return txn.payer;
 				},
-				transactions));
-		var dummyTransactionList = A2(
+				transactions)));
+	var totalAmountPaid = $elm$core$List$sum(
+		A2(
 			$elm$core$List$map,
-			function (n) {
-				return {amount: 0.0, detail: '', payer: n};
+			function (txn) {
+				return txn.amount;
 			},
-			additionMembers);
-		var transactionListWithAdditionalMember = _Utils_ap(transactions, dummyTransactionList);
-		var dictUpdateFunc = F2(
-			function (txn, dict) {
-				return A3(
-					$elm$core$Dict$update,
-					txn.payer,
-					A2(
-						$elm$core$Basics$composeR,
-						$elm$core$Maybe$map(
-							$elm$core$Basics$add(txn.amount)),
-						$author$project$Util$maybeOrElse(txn.amount)),
-					dict);
-			});
-		var groupedByName = A3($elm$core$List$foldl, dictUpdateFunc, $elm$core$Dict$empty, transactionListWithAdditionalMember);
-		var groupedByNameAsList = A2(
-			$elm$core$List$map,
-			function (n) {
-				var _v0 = n;
-				var payer = _v0.a;
-				var amount = _v0.b;
-				return {amount: amount, detail: '', payer: payer};
-			},
-			$elm$core$Dict$toList(groupedByName));
-		var amountPerPayer = totalAmountPaid / totalMember;
-		var nettedTransactionList = A2(
+			transactions));
+	var dictUpdateFunc = F2(
+		function (txn, dict) {
+			return A3(
+				$elm$core$Dict$update,
+				txn.payer,
+				A2(
+					$elm$core$Basics$composeR,
+					$elm$core$Maybe$map(
+						$elm$core$Basics$add(txn.amount)),
+					$author$project$Util$maybeOrElse(txn.amount)),
+				dict);
+		});
+	var groupedByName = A3($elm$core$List$foldl, dictUpdateFunc, $elm$core$Dict$empty, transactions);
+	var groupedByNameAsList = A2(
+		$elm$core$List$map,
+		function (n) {
+			var _v0 = n;
+			var payer = _v0.a;
+			var amount = _v0.b;
+			return {amount: amount, detail: '', payer: payer};
+		},
+		$elm$core$Dict$toList(groupedByName));
+	var amountPerPayer = totalAmountPaid / totalMember;
+	var nettedTransactionList = A2(
+		$elm$core$List$map,
+		function (txn) {
+			return _Utils_update(
+				txn,
+				{amount: txn.amount - amountPerPayer});
+		},
+		groupedByNameAsList);
+	var nettedNegative = A2(
+		$elm$core$List$sortBy,
+		function (txn) {
+			return txn.amount;
+		},
+		A2(
 			$elm$core$List$map,
 			function (txn) {
 				return _Utils_update(
 					txn,
-					{amount: txn.amount - amountPerPayer});
-			},
-			groupedByNameAsList);
-		var nettedNegative = A2(
-			$elm$core$List$sortBy,
-			function (txn) {
-				return txn.amount;
-			},
-			A2(
-				$elm$core$List$map,
-				function (txn) {
-					return _Utils_update(
-						txn,
-						{
-							amount: $author$project$Util$absolute(txn.amount)
-						});
-				},
-				A2(
-					$elm$core$List$filter,
-					function (txn) {
-						return txn.amount < 0;
-					},
-					nettedTransactionList)));
-		var nettedPositive = A2(
-			$elm$core$List$sortBy,
-			function (txn) {
-				return txn.amount;
+					{
+						amount: $author$project$Util$absolute(txn.amount)
+					});
 			},
 			A2(
 				$elm$core$List$filter,
 				function (txn) {
-					return txn.amount > 0;
+					return txn.amount < 0;
 				},
-				nettedTransactionList));
-		return A2($author$project$Main$settleFromNettedAmount, nettedPositive, nettedNegative);
-	});
+				nettedTransactionList)));
+	var nettedPositive = A2(
+		$elm$core$List$sortBy,
+		function (txn) {
+			return txn.amount;
+		},
+		A2(
+			$elm$core$List$filter,
+			function (txn) {
+				return txn.amount > 0;
+			},
+			nettedTransactionList));
+	return A2($author$project$Main$settleFromNettedAmount, nettedPositive, nettedNegative);
+};
 var $author$project$Util$findIndexInListRecur = F3(
 	function (n, pred, remaining) {
 		findIndexInListRecur:
@@ -6213,15 +6194,13 @@ var $author$project$Main$update = F2(
 					{
 						parsedTxn: $elm$core$Maybe$Nothing,
 						runningTxnId: model.runningTxnId + 1,
-						settlement: A2(
-							$author$project$Main$settleTransaction,
+						settlement: $author$project$Main$settleTransaction(
 							A2(
 								$elm$core$List$map,
 								function (kt) {
 									return kt.data;
 								},
-								newTxnList),
-							_List_Nil),
+								newTxnList)),
 						txnForm: $author$project$Main$emptyTxnForm,
 						txnList: newTxnList
 					});
@@ -6283,15 +6262,13 @@ var $author$project$Main$update = F2(
 					{
 						modalMode: $author$project$Model$Hide,
 						parsedTxn: $elm$core$Maybe$Nothing,
-						settlement: A2(
-							$author$project$Main$settleTransaction,
+						settlement: $author$project$Main$settleTransaction(
 							A2(
 								$elm$core$List$map,
 								function (kt) {
 									return kt.data;
 								},
-								newTxnList),
-							_List_Nil),
+								newTxnList)),
 						txnForm: $author$project$Main$emptyTxnForm,
 						txnList: newTxnList
 					});
@@ -6306,15 +6283,13 @@ var $author$project$Main$update = F2(
 				return _Utils_update(
 					model,
 					{
-						settlement: A2(
-							$author$project$Main$settleTransaction,
+						settlement: $author$project$Main$settleTransaction(
 							A2(
 								$elm$core$List$map,
 								function (kt) {
 									return kt.data;
 								},
-								newTxnList),
-							_List_Nil),
+								newTxnList)),
 						txnList: newTxnList
 					});
 		}
@@ -6679,14 +6654,91 @@ var $author$project$Page$Home$settlementTable = function (settlement) {
 				A2($elm$html$Html$tbody, _List_Nil, rows)
 			]));
 };
-var $elm$html$Html$h1 = _VirtualDom_node('h1');
+var $author$project$Main$summarize = function (txnList) {
+	var totalAmount = $elm$core$List$sum(
+		A2(
+			$elm$core$List$map,
+			function (n) {
+				return n.amount;
+			},
+			txnList));
+	var size = $elm$core$List$length(txnList);
+	return {amountPerHead: totalAmount / size, totalMember: size};
+};
 var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
+var $author$project$Page$Home$summaryBox = function (detail) {
+	return A2(
+		$elm$html$Html$table,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('table is-fullwidth is-bordered')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$tbody,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$tr,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$td,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Total member')
+									])),
+								A2(
+								$elm$html$Html$td,
+								_List_fromArray(
+									[
+										A2($elm$html$Html$Attributes$style, 'text-align', 'end')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text(
+										$elm$core$String$fromInt(detail.totalMember))
+									]))
+							])),
+						A2(
+						$elm$html$Html$tr,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$td,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Amount per head')
+									])),
+								A2(
+								$elm$html$Html$td,
+								_List_fromArray(
+									[
+										A2($elm$html$Html$Attributes$style, 'text-align', 'end')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text(
+										A2($myrho$elm_round$Round$round, 2, detail.amountPerHead))
+									]))
+							]))
+					]))
+			]));
+};
+var $elm$html$Html$h1 = _VirtualDom_node('h1');
 var $author$project$Page$Home$titleHeading = A2(
-	$elm$html$Html$section,
+	$elm$html$Html$div,
 	_List_fromArray(
 		[
-			$elm$html$Html$Attributes$class('hero')
+			$elm$html$Html$Attributes$class('hero-body'),
+			A2($elm$html$Html$Attributes$style, 'padding-top', '0')
 		]),
 	_List_fromArray(
 		[
@@ -6694,29 +6746,19 @@ var $author$project$Page$Home$titleHeading = A2(
 			$elm$html$Html$div,
 			_List_fromArray(
 				[
-					$elm$html$Html$Attributes$class('hero-body'),
-					A2($elm$html$Html$Attributes$style, 'padding-top', '0')
+					$elm$html$Html$Attributes$class('container center-x')
 				]),
 			_List_fromArray(
 				[
 					A2(
-					$elm$html$Html$div,
+					$elm$html$Html$h1,
 					_List_fromArray(
 						[
-							$elm$html$Html$Attributes$class('container center-x')
+							$elm$html$Html$Attributes$class('title')
 						]),
 					_List_fromArray(
 						[
-							A2(
-							$elm$html$Html$h1,
-							_List_fromArray(
-								[
-									$elm$html$Html$Attributes$class('title')
-								]),
-							_List_fromArray(
-								[
-									$elm$html$Html$text('Clear Tung')
-								]))
+							$elm$html$Html$text('Clear Tung')
 						]))
 				]))
 		]));
@@ -7124,6 +7166,14 @@ var $author$project$Main$view = function (model) {
 					]),
 				_List_fromArray(
 					[
+						$elm$core$List$isEmpty(model.txnList) ? $elm$html$Html$text('') : $author$project$Page$Home$summaryBox(
+						$author$project$Main$summarize(
+							A2(
+								$elm$core$List$map,
+								function (n) {
+									return n.data;
+								},
+								model.txnList))),
 						$elm$core$List$isEmpty(model.txnList) ? $elm$html$Html$text('') : $author$project$Page$Home$transactionsTable(model.txnList),
 						$elm$core$List$isEmpty(model.txnList) ? $elm$html$Html$text('') : $author$project$Page$Home$settlementTable(model.settlement)
 					]))
