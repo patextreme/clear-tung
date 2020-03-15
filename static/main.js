@@ -6662,8 +6662,15 @@ var $author$project$Main$summarize = function (txnList) {
 				return n.amount;
 			},
 			txnList));
-	var size = $elm$core$List$length(txnList);
-	return {amountPerHead: totalAmount / size, totalMember: size};
+	var membersCount = $elm$core$Set$size(
+		$elm$core$Set$fromList(
+			A2(
+				$elm$core$List$map,
+				function (n) {
+					return n.payer;
+				},
+				txnList)));
+	return {amountPerHead: totalAmount / membersCount, totalAmount: totalAmount, totalMember: membersCount};
 };
 var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
@@ -6715,7 +6722,31 @@ var $author$project$Page$Home$summaryBox = function (detail) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Amount per head')
+										$elm$html$Html$text('Total amount')
+									])),
+								A2(
+								$elm$html$Html$td,
+								_List_fromArray(
+									[
+										A2($elm$html$Html$Attributes$style, 'text-align', 'end')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text(
+										A2($myrho$elm_round$Round$round, 2, detail.totalAmount))
+									]))
+							])),
+						A2(
+						$elm$html$Html$tr,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$td,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Amount per person')
 									])),
 								A2(
 								$elm$html$Html$td,
